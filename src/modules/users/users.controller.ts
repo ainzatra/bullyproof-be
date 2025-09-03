@@ -18,4 +18,10 @@ export class UsersController {
         return this.service.findAll()
     }
 
+    @Get(':id')
+    findOne(@Param('id') id: string){
+        return this.service.findOne(id)
+    }
+
+
 }

@@ -7,9 +7,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthGuard } from './guard/auth.guard';
 import { UsersModule } from 'src/modules/users/users.module';
 import { UsersService } from '../users/users.service';
+import { EmailService } from 'src/email.service';
 
 @Module({
-  providers: [AuthService, PrismaService, AuthGuard, UsersService],
+  providers: [AuthService, PrismaService, AuthGuard, UsersService, EmailService],
   imports: [
     ZenstackModule,
     JwtModule.register({

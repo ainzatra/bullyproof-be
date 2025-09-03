@@ -13,18 +13,20 @@ generator client {
 }
 
 model User {
-  id        String    @id() @default(uuid())
-  email     String    @unique()
-  password  String
-  name      String
-  birthday  DateTime  @db.Date()
-  gender    String
-  grade     Int
-  section   String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt()
-  reports   Report[]
-  guardian  Guardian?
+  id         String    @id() @default(uuid())
+  email      String    @unique()
+  password   String
+  name       String
+  birthday   DateTime  @db.Date()
+  gender     String
+  grade      Int
+  section    String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt()
+  isVerified Boolean   @default(false)
+  otp        String?
+  reports    Report[]
+  guardian   Guardian?
 }
 
 model Guardian {

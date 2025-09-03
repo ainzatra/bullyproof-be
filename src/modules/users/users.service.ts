@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma.service';
 import bcrypt from 'bcrypt'
 import { ClsService } from 'nestjs-cls';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UserGuardianDto } from './dto/user-guardian.dto';
 
 @Injectable()
 export class UsersService {
@@ -60,6 +61,36 @@ export class UsersService {
         email: email,
       },
     });
+  }
+
+  async findOne(id: string): Promise<UserGuardianDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { guardian: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return user;
+  }
+
+  async setOtp(code: string, email: string){
+    return await this.prisma.user.update({
+      where: { email },
+      data: {
+        otp: code
+      }
+    })
+  }
+
+  async verifyUser(id: string) {
+    return await this.prisma.user.update({
+      where: { id },
+      data: {
+        isVerified: true
+      }
+    })
   }
 
 }

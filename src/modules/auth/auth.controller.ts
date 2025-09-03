@@ -22,4 +22,14 @@ export class AuthController {
   async refresh() {
     return this.service.refresh()
   }
+
+  @Post('verify-otp')
+  async verifyOtp(@Body() body) {
+    return this.service.verifyOtp(body.email, body.code)
+  }
+
+  @Post('resend-otp')
+  async resendOtp(@Body() body) {
+    return this.service.sendOtp(body.email)
+  }
 }
