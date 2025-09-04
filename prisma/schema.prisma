@@ -12,6 +12,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum ReportStatus {
+  Pending
+  InProgress
+  Resolved
+}
+
 model User {
   id         String    @id() @default(uuid())
   email      String    @unique()
@@ -53,23 +59,27 @@ model Guidance {
 }
 
 model Report {
-  id                String    @id() @default(uuid())
-  studentId         String
-  incident_date     DateTime  @db.Date()
-  details           String
-  type              String
-  offender          String
-  offender_identity String
-  actionsTaken      String
-  feelings          String
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt()
-  status            String
-  notes             String?
-  guidanceId        String?
-  guidance          Guidance? @relation(fields: [guidanceId], references: [id])
-  student           User      @relation(fields: [studentId], references: [id])
-  ai_flag           AiReport?
+  id           String           @id() @default(uuid())
+  studentId    String
+  details      String
+  actionsTaken String?
+  feelings     String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt()
+  status       ReportStatus     @default(Pending)
+  notes        String?
+  guidanceId   String?
+  evidences    ReportEvidence[]
+  guidance     Guidance?        @relation(fields: [guidanceId], references: [id])
+  student      User             @relation(fields: [studentId], references: [id])
+  ai_flag      AiReport?
+}
+
+model ReportEvidence {
+  id       String @id() @default(uuid())
+  reportId String
+  url      String
+  report   Report @relation(fields: [reportId], references: [id])
 }
 
 model AiReport {

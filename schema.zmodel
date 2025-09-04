@@ -8,6 +8,12 @@ generator client {
     provider = "prisma-client-js"
 }
 
+enum ReportStatus {
+    Pending
+    InProgress
+    Resolved
+}
+
 model User {
     id          String   @id @default(uuid())
     email       String   @unique
@@ -54,22 +60,27 @@ model Guidance {
 model Report {
     id          String   @id @default(uuid())
     studentId   String
-    incident_date DateTime @db.Date
     details String
-    type       String
-    offender String
-    offender_identity String // known, anonymous
-    actionsTaken String
-    feelings String
+    actionsTaken String?
+    feelings String // lets just separate each by comma
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
-    status String // pending, reviewed, resolved, unresolved
-    notes String?
+    status ReportStatus @default(Pending)// pending, in progress, resolved
+    notes String? // notes ni guidance
     guidanceId String?
 
+    evidences   ReportEvidence[]
     guidance   Guidance? @relation(fields: [guidanceId], references: [id])
     student     User     @relation(fields: [studentId], references: [id])
     ai_flag   AiReport?
+}
+
+model ReportEvidence {
+    id          String   @id @default(uuid())
+    reportId    String
+    url         String
+
+    report Report @relation(fields: [reportId], references: [id])
 }
 
 model AiReport {

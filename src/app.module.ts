@@ -7,6 +7,7 @@ import { UsersModule } from './modules/users/users.module';
 import { ZenstackModule } from './zenstack.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { ReportModule } from './modules/report/report.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
     UsersModule,
     ZenstackModule,
     AuthModule,
+    ReportModule
   ],
   controllers: [],
   providers: [
