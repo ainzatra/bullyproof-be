@@ -58,7 +58,7 @@ model Guidance {
 }
 
 model Report {
-    id          String   @id @default(uuid())
+    id          String   @id @default(cuid())
     studentId   String
     details String
     actionsTaken String?

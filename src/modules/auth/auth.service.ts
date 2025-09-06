@@ -52,7 +52,7 @@ export class AuthService {
 
     const token = await this.generateJWT(user);
     const userInfo = await this.service.findOne(user.id);
-
+    console.log('Login successful: ', user.email)
     return {token, id: user.id, name: user.name, email: user.email, isVerified: user.isVerified} 
   }
     
@@ -62,7 +62,7 @@ export class AuthService {
     if(!user) {
       throw new UnauthorizedException('Could not create user');
     }
-
+    console.log('Success creating user:', user.id)
     const token = await this.generateJWT(user);
     const userInfo = await this.service.findOne(user.id);
 
@@ -115,6 +115,8 @@ export class AuthService {
 
   async sendOtp(email: string) {
     const code = await this.email.sendVerification(email)
+    console.log('Sending otp code of ', code, ' to ', email)
     await this.service.setOtp(code, email)
+    console.log('Otp email sent')
   }
 }

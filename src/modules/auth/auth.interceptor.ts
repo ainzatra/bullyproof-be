@@ -15,6 +15,7 @@ export class AuthInterceptor implements NestInterceptor {
   ) {}
 
   async intercept(context: ExecutionContext, next: CallHandler) {
+    console.log('Called server')
     const request = context.switchToHttp().getRequest();
     const authorization = request.headers.authorization;
     if (authorization) {

@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { randomUUID } from 'crypto';
 import { S3Service } from '../s3.service';
+import { buffer } from 'stream/consumers';
  
 @Injectable()
 export class ReportService {
@@ -12,17 +13,30 @@ export class ReportService {
     ) {}
 
     async fetchUserReports(userId: string) {
+        console.log('Fetching report of user:', userId)
+        const user = await this.prisma.user.findUnique({
+            where: {
+                id: userId
+            }
+        })
+
+        if (!user) {
+            console.log('User not found')
+            throw new NotFoundException()
+        }
+
         const reports = await this.prisma.report.findMany({
             where: {
                 studentId: userId
             }
         })
-        console.log({reports})
+
         return reports
     }
  
-    async createReport(data: CreateReportDto, files: any[]) {
+    async createReport(data: CreateReportDto, files: any) {
         // Create report first to get id
+        console.log('Creating report...')
         const report = await this.prisma.report.create({ data: {
             studentId: data.studentId,
             feelings: data.feelings,
@@ -34,12 +48,18 @@ export class ReportService {
  
         const uploadedUrls: string[] = [];
         const prefix = `reports/${report.id}/`;
- 
-        if (files && files.length) {
+        
+        console.log('Uploading evidences to S3...')
+        if (data.files && data.files.length) {
             try {
-                for (const file of files) {
-                    const key = `${prefix}${Date.now()}-${(file.originalname || 'upload').replace(/\s+/g, '_')}`;
-                    const url = await this.s3.upload(file, key);
+                for (const file of data.files) {
+                    const decodedFile = Buffer.from(file.encodedFile, 'base64')
+
+                    const key = `${prefix}${Date.now()}-${(file.name || 'upload').replace(/\s+/g, '_')}`;
+                    const url = await this.s3.upload({
+                        buffer: decodedFile,
+                        mimeType: file.mimeType
+                    }, key);
                     uploadedUrls.push(url);
                 }
             } catch (error) {
@@ -60,6 +80,7 @@ export class ReportService {
             }
         }
  
+        console.log('Saving urls to report evidence records...')
         // If uploads succeeded, create evidence records
         if (uploadedUrls.length) {
             try {
@@ -89,6 +110,7 @@ export class ReportService {
             }
         }
  
+        console.log('Finished creating report')
         // Return the report including evidences
         return this.prisma.report.findUnique({
             where: { id: report.id }
