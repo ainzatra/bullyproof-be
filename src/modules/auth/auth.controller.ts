@@ -1,15 +1,19 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { AuthGuard } from './guard/auth.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly service: AuthService) {}
 
   @Post('login')
-  async login(@Body() data: LoginAuthDto) {
+  async login(@Body() data: LoginAuthDto, @Query('type') type?: string) {
+    if(type && type === 'web') {
+      return this.service.loginWeb(data)
+    }
     return this.service.login(data);
   }
 
@@ -18,6 +22,7 @@ export class AuthController {
     return this.service.signup(data);
   }
 
+  @UseGuards(AuthGuard)
   @Get('me')
   async refresh() {
     return this.service.refresh()
@@ -31,5 +36,10 @@ export class AuthController {
   @Post('resend-otp')
   async resendOtp(@Body() body) {
     return this.service.sendOtp(body.email)
+  }
+
+  @Post('create-guidance')
+  async createGuidance(@Body() body) {
+    return this.service.createGuidance(body)
   }
 }

@@ -4,6 +4,7 @@ import { CreateReportDto } from './dto/create-report.dto';
 import { randomUUID } from 'crypto';
 import { S3Service } from '../s3.service';
 import { buffer } from 'stream/consumers';
+import { ReportStatus } from '@prisma/client';
  
 @Injectable()
 export class ReportService {
@@ -12,6 +13,20 @@ export class ReportService {
         private readonly s3: S3Service,
     ) {}
 
+    async findForReview() {
+        return this.prisma.report.findMany({
+            where: {
+                NOT: {
+                    status: ReportStatus.Resolved
+                }
+            },
+            include: {
+                ai_flag: true,
+                evidences: true,
+                student: true
+            }
+        })
+    }
     async fetchUserReports(userId: string) {
         console.log('Fetching report of user:', userId)
         const user = await this.prisma.user.findUnique({
@@ -48,18 +63,13 @@ export class ReportService {
  
         const uploadedUrls: string[] = [];
         const prefix = `reports/${report.id}/`;
-        
-        console.log('Uploading evidences to S3...')
-        if (data.files && data.files.length) {
+ 
+        if (files && files.length) {
             try {
-                for (const file of data.files) {
-                    const decodedFile = Buffer.from(file.encodedFile, 'base64')
-
-                    const key = `${prefix}${Date.now()}-${(file.name || 'upload').replace(/\s+/g, '_')}`;
-                    const url = await this.s3.upload({
-                        buffer: decodedFile,
-                        mimeType: file.mimeType
-                    }, key);
+                for (const file of files) {
+                    console.log('Uploading to S3',{file})
+                    const key = `${prefix}${Date.now()}-${(file.originalname || 'upload').replace(/\s+/g, '_')}`;
+                    const url = await this.s3.upload(file, key);
                     uploadedUrls.push(url);
                 }
             } catch (error) {
@@ -79,7 +89,7 @@ export class ReportService {
                 throw new BadRequestException('Failed to upload evidence files');
             }
         }
- 
+        console.log('Uploaded URLs', uploadedUrls)
         console.log('Saving urls to report evidence records...')
         // If uploads succeeded, create evidence records
         if (uploadedUrls.length) {

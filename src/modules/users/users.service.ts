@@ -1,6 +1,6 @@
 import { Injectable, Inject, HttpException, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { ENHANCED_PRISMA } from '@zenstackhq/server/nestjs';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 import bcrypt from 'bcrypt'
 import { ClsService } from 'nestjs-cls';
@@ -51,8 +51,18 @@ export class UsersService {
       }
     }
 
-  async findAll(): Promise<User[]> {
-    return this.prisma.user.findMany()
+  async findAll() {
+    const data = await this.prisma.user.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        guardian: true,
+      },
+      omit: {
+        password: true,
+        otp: true
+      }
+    });
+    return data
   }
 
   async findByEmail(email: string): Promise<User | null> {

@@ -10,7 +10,7 @@ import { UsersService } from '../users/users.service';
 import { EmailService } from 'src/email.service';
 
 @Module({
-  providers: [AuthService, PrismaService, AuthGuard, UsersService, EmailService],
+  providers: [AuthService, PrismaService, AuthGuard, UsersService, EmailService, PrismaService],
   imports: [
     ZenstackModule,
     JwtModule.register({

@@ -3,16 +3,18 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import * as bcrypt from 'bcrypt';
-import { User } from '@prisma/client';
+import { Guidance, User } from '@prisma/client';
 import { UsersService } from '../users/users.service';
 import { ClsService } from 'nestjs-cls';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { EmailService } from 'src/email.service';
+import { PrismaService } from 'src/prisma.service';
 
 type TokenPayload = {
   token: string;
@@ -28,6 +30,7 @@ export class AuthService {
     private readonly service: UsersService,
     private readonly jwtService: JwtService,
     private readonly email: EmailService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async login(data: LoginAuthDto) {
@@ -54,6 +57,29 @@ export class AuthService {
     const userInfo = await this.service.findOne(user.id);
     console.log('Login successful: ', user.email)
     return {token, id: user.id, name: user.name, email: user.email, isVerified: user.isVerified} 
+  }
+
+  async loginWeb(data: LoginAuthDto) {
+    const user = await this.prisma.guidance.findUnique({
+      where: {
+        email: data.email
+      }
+    })
+
+    if (!user) throw new UnauthorizedException('Invalid email or password')
+    
+    const isPasswordValid = await bcrypt.compare(
+      data.password,
+      user.password,
+    );
+    
+    if (!isPasswordValid) throw new UnauthorizedException('Invalid email or password');
+
+    const token = await this.generateJWT(user)
+    console.log('Guidance login successfull:', user.email)
+    return {token, id: user.id, name: user.name, email: user.email} 
+
+
   }
     
   async signup(data: CreateUserDto) {
@@ -85,9 +111,9 @@ export class AuthService {
     return {token, id: user.id, name: user.name, email: user.email, isVerified: true} 
   }
   
-  async generateJWT(user: User): Promise<string> {
+  async generateJWT(user: User | Guidance): Promise<string> {
     const tokenPayload = {
-      sub: user.id,
+      id: user.id,
       email: user.email,
       name: user.name,
     };
@@ -107,10 +133,26 @@ export class AuthService {
     const result = await this.verifyJwtToken(auth.token)
 
     if (!result) {
+      console.log('expired token')
       throw new UnauthorizedException('Invalid Token')
     }
 
-    return result 
+    const user = await this.prisma.guidance.findUnique({
+      where: {
+        id: result.id
+      }
+    })
+
+    if(!user) {
+      throw new NotFoundException
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      token: result.token
+    }
   }
 
   async sendOtp(email: string) {
@@ -118,5 +160,12 @@ export class AuthService {
     console.log('Sending otp code of ', code, ' to ', email)
     await this.service.setOtp(code, email)
     console.log('Otp email sent')
+  }
+
+  async createGuidance(data) {
+    const saltRounds = 10
+    const hashedPassword = await bcrypt.hash(data.password, saltRounds)
+    data.password = hashedPassword
+    return this.prisma.guidance.create({ data })
   }
 }

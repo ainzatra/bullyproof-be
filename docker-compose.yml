@@ -15,7 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:9.8
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PG_ADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PG_ADMIN_DEFAULT_PASSWORD}
