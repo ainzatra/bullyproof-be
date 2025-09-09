@@ -1,0 +1,34 @@
+# Buildspec for backend: builds NestJS, builds Docker image, and pushes to ECR
+# Environment variables required (set these in CodeBuild project environment):
+# - AWS_DEFAULT_REGION (required)
+# - AWS_ACCOUNT_ID (required)
+# - ECR_REPOSITORY (required)
+# - IMAGE_TAG (optional; defaults to "latest" if not provided)
+# - PUSH_LATEST (optional; set to "true" to also push the "latest" tag)
+# - DOCKER_BUILD_ARGS (optional; extra arguments for `docker build`, e.g., "--build-arg FOO=bar")
+version: 0.2
+
+# Request Node.js 18 in the build image
+runtime-versions:
+  nodejs: 22
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+      - export IMAGE_TAG=${IMAGE_TAG:-latest}
+      - export IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG"
+  build:
+    commands:
+      - echo Building Docker image from bullyproof-be/Dockerfile...
+      - docker build -t "$IMAGE_URI" .
+  post_build:
+    commands:
+      - echo Pushing Docker image $IMAGE_URI ...
+      - docker push "$IMAGE_URI"
+      - |
+        LATEST_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:latest"
+        docker tag "$IMAGE_URI" "$LATEST_URI"
+        docker push "$LATEST_URI"
+      - echo Build completed on `date`
