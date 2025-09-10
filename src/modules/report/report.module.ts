@@ -3,9 +3,17 @@ import { ReportService } from './report.service';
 import { ReportController } from './report.controller';
 import { PrismaService } from 'src/prisma.service';
 import { S3Service } from '../s3.service';
+import { LlmService } from '../llm/llm.service';
+import { AireportService } from '../aireport/aireport.service';
 
 @Module({
-  providers: [ReportService, PrismaService, S3Service],
-  controllers: [ReportController]
+    providers: [
+        ReportService,
+        PrismaService,
+        S3Service,
+        LlmService,
+        AireportService,
+    ],
+    controllers: [ReportController],
 })
 export class ReportModule {}
