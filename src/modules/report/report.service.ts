@@ -23,15 +23,20 @@ export class ReportService {
 
     async findForReview() {
         return this.prisma.report.findMany({
-            where: {
-                NOT: {
-                    status: ReportStatus.Resolved,
-                },
-            },
             include: {
-                ai_flag: true,
-                evidences: true,
-                student: true,
+                ai_flag: {
+                    select: {
+                        urgency: true,
+                    },
+                },
+                student: {
+                    select: {
+                        name: true,
+                        email: true,
+                        grade: true,
+                        section: true,
+                    },
+                },
             },
         });
     }
@@ -52,6 +57,9 @@ export class ReportService {
             where: {
                 studentId: userId,
             },
+            orderBy: {
+                createdAt: 'desc',
+            },
         });
 
         return reports;
@@ -63,6 +71,15 @@ export class ReportService {
             include: {
                 ai_flag: true,
                 evidences: true,
+                student: {
+                    select: {
+                        name: true,
+                        email: true,
+                        grade: true,
+                        section: true,
+                        guardian: true,
+                    },
+                },
             },
         });
     }
