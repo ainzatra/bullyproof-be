@@ -11,6 +11,7 @@ import { buffer } from 'stream/consumers';
 import { AiReport, ReportStatus } from '@prisma/client';
 import { LlmService } from '../llm/llm.service';
 import { AireportService } from '../aireport/aireport.service';
+import { ReportDocumentDto } from './dto/report-document.dto';
 
 @Injectable()
 export class ReportService {
@@ -71,6 +72,7 @@ export class ReportService {
             include: {
                 ai_flag: true,
                 evidences: true,
+                documents: true,
                 student: {
                     select: {
                         name: true,
@@ -80,6 +82,27 @@ export class ReportService {
                         guardian: true,
                     },
                 },
+            },
+        });
+    }
+
+    async updateReportStatus(id: string) {
+        const report = await this.prisma.report.findUnique({
+            where: { id },
+        });
+
+        if (!report) throw new NotFoundException();
+
+        let newStatus: ReportStatus = 'Pending';
+
+        if (report.status === 'Pending') newStatus = 'InProgress';
+
+        if (report.status === 'InProgress') newStatus = 'Resolved';
+
+        return this.prisma.report.update({
+            where: { id },
+            data: {
+                status: newStatus,
             },
         });
     }
@@ -191,6 +214,81 @@ export class ReportService {
         // Return the report including evidences
         return this.prisma.report.findUnique({
             where: { id: report.id },
+        });
+    }
+
+    async updateReport(id, notes, files: ReportDocumentDto) {
+        const report = await this.prisma.report.findUnique({
+            where: { id },
+        });
+
+        if (!report) throw new NotFoundException();
+
+        // Update report notes
+        if (notes) {
+            await this.prisma.report.update({
+                where: { id },
+                data: {
+                    notes,
+                },
+            });
+        }
+
+        // Upload report documents (supports multiple document types)
+        if (files) {
+            const prefixBase = `reports/${report.id}/documents/`;
+            const uploadedUrls: string[] = [];
+
+            try {
+                // list of allowed document types matching Prisma enum names
+                const docTypes = ['brngy', 'dswd', 'committee', 'council'];
+
+                for (const type of docTypes) {
+                    const fileList: Express.Multer.File[] = files[type];
+                    if (!fileList || !fileList.length) continue;
+
+                    for (const file of fileList) {
+                        const key = `${prefixBase}${type}/${Date.now()}-${(file.originalname || 'upload').replace(/\s+/g, '_')}`;
+                        const url = await this.s3.upload(file, key);
+                        uploadedUrls.push(url);
+
+                        // create ReportDocument record with the document type
+                        await this.prisma.reportDocument.create({
+                            data: {
+                                report_id: report.id,
+                                url,
+                                type: type as any,
+                            },
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to upload/save report documents:', error);
+
+                // Attempt cleanup of uploaded files for this report's documents folder
+                try {
+                    await this.s3.deleteFolder(
+                        `reports/${report.id}/documents/`,
+                    );
+                } catch (s3Err) {
+                    console.error(
+                        'Failed to delete S3 folder during document-upload cleanup:',
+                        s3Err,
+                    );
+                }
+
+                throw new BadRequestException(
+                    'Failed to upload report documents',
+                );
+            }
+        }
+
+        // return the updated report (including documents)
+        return this.prisma.report.findUnique({
+            where: { id },
+            include: {
+                documents: true,
+            },
         });
     }
 }
