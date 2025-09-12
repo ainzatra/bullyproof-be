@@ -37,6 +37,11 @@ export class ReportController {
         return this.service.createReport(body, files);
     }
 
+    @Get('dashboard')
+    async fetchDashboardNumbers() {
+        return this.service.fetchDashboardNumbers();
+    }
+
     @Post('update/:id')
     @UseInterceptors(
         FileFieldsInterceptor(

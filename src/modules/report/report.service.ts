@@ -41,6 +41,7 @@ export class ReportService {
             },
         });
     }
+
     async fetchUserReports(userId: string) {
         console.log('Fetching report of user:', userId);
         const user = await this.prisma.user.findUnique({
@@ -290,5 +291,105 @@ export class ReportService {
                 documents: true,
             },
         });
+    }
+
+    async fetchDashboardNumbers() {
+        const total = await this.prisma.report.count();
+
+        const status = await this.prisma.report.groupBy({
+            by: ['status'],
+            _count: true,
+        });
+
+        const urgency = await this.prisma.aiReport.groupBy({
+            by: ['urgency'],
+            _count: true,
+        });
+
+        const recent = await this.prisma.report.findMany({
+            orderBy: {
+                createdAt: 'desc',
+            },
+            take: 3,
+            select: {
+                id: true,
+                status: true,
+                details: true,
+                ai_flag: {
+                    select: {
+                        urgency: true,
+                    },
+                },
+                student: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        });
+
+        // Compute last 12 months (including current month) using local time to match user expectations,
+        // and fetch reports within that local range
+        const now = new Date();
+        // start from the first day of the month 11 months ago (local)
+        const startOfWindow = new Date(
+            now.getFullYear(),
+            now.getMonth() - 11,
+            1,
+            0,
+            0,
+            0,
+            0,
+        );
+        const endOfWindow = now; // include up to current moment
+
+        const reportDates = await this.prisma.report.findMany({
+            where: {
+                createdAt: {
+                    gte: startOfWindow,
+                    lte: endOfWindow,
+                },
+            },
+            select: {
+                createdAt: true,
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+
+        // Build the list of month keys (YYYY-MM) for the last 12 months (newest first) using local time
+        const months: string[] = [];
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            months.push(monthStr);
+        }
+
+        // Initialize map with zero counts for each month in the window
+        const perMonthMap = new Map<string, number>();
+        for (const monthKey of months) {
+            perMonthMap.set(monthKey, 0);
+        }
+
+        // Count reports into the map using local month/year from the createdAt timestamp
+        for (const r of reportDates) {
+            const created = r.createdAt;
+            if (!created) continue;
+            const monthKey = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}`;
+            if (!perMonthMap.has(monthKey)) {
+                // report falls outside the 12-month window (defensive), skip
+                continue;
+            }
+            perMonthMap.set(monthKey, (perMonthMap.get(monthKey) || 0) + 1);
+        }
+
+        // Preserve newest-first order from months array
+        const monthly = months.map((month) => ({
+            month,
+            count: perMonthMap.get(month) || 0,
+        }));
+
+        return { total, status, urgency, recent, monthly };
     }
 }
