@@ -101,4 +101,48 @@ Report details:
             throw error;
         }
     }
+
+    /**
+     * Generate a short AI chat reply for a user's message.
+     * This is used as the fallback when no admin is connected.
+     */
+    async generateReply(input: {
+        message: string;
+        context?: string;
+    }): Promise<string> {
+        const promptPieces = [
+            'You are a helpful, empathetic assistant for students and guardians interacting with school admins.',
+            'When the school admin is unavailable, provide a concise, supportive, and factual response that acknowledges the user and provides next steps.',
+            `User message: ${input.message}`,
+        ];
+        if (input.context) {
+            promptPieces.push(`Context: ${input.context}`);
+        }
+        const prompt = promptPieces.join('\n\n');
+
+        try {
+            const response = await this.openai.chat.completions.create({
+                model: 'openai/gpt-5-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content:
+                            'You are a helpful assistant for school support chats.',
+                    },
+                    { role: 'user', content: prompt },
+                ],
+                temperature: 0.7,
+                max_tokens: 256,
+            });
+
+            const content = response.choices[0].message?.content;
+            if (!content) {
+                throw new Error('No AI response for chat reply');
+            }
+            return content;
+        } catch (error) {
+            this.logger.error('Error generating chat reply', error);
+            throw error;
+        }
+    }
 }
