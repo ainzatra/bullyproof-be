@@ -6,7 +6,7 @@ import { PrismaService } from 'src/prisma.service';
 export class ChatService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async getMessages(id: string) {
+    async getMessages(id: string, limit = 50) {
         const user = await this.prisma.user.findUnique({ where: { id } });
 
         if (!user) throw new NotFoundException('User not found');
@@ -25,10 +25,10 @@ export class ChatService {
             orderBy: {
                 createdAt: 'desc',
             },
-            take: 50,
+            take: limit,
         });
 
-        console.log(`User ${user.name} messages:`, messages);
+        // console.log(`User ${user.name} messages:`, messages);
         return messages;
     }
 }

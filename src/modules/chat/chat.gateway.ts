@@ -8,9 +8,15 @@ import {
     ConnectedSocket,
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+    Injectable,
+    InternalServerErrorException,
+    Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma.service';
+import { ChatService } from './chat.service';
+import { LlmService } from '../llm/llm.service';
 
 type JwtPayload = {
     sub?: string;
@@ -27,6 +33,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     constructor(
         private readonly jwtService: JwtService,
         private readonly prisma: PrismaService,
+        private readonly service: ChatService,
+        private readonly llm: LlmService,
     ) {}
 
     @WebSocketServer() server: Server;
@@ -320,6 +328,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 id: message.id,
                 conversationId: conversation.id,
             });
+            const isOnline = await this.isAdminOnline();
+            console.log('Check is admin online', isOnline);
+            if (!isOnline) {
+                console.log('Generating AI Response...');
+                const reply = await this.generateAiResponse(payload);
+
+                if (reply) {
+                    console.log('Sending the AI Response...');
+                    await this.sendAiResponse(reply, user);
+                    console.log('AI Response has been sent...');
+                }
+            }
         } catch (err) {
             this.logger.error('Error saving message', err as any);
             client.emit('error', { message: 'Internal server error' });
@@ -427,7 +447,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             });
 
             // Also emit to admins room so admin UIs can update centralized list
-            this.server.to(this.adminRoom()).emit('admin-sent', {
+            client.to(this.adminRoom()).emit('admin-sent', {
                 studentId,
                 id: message.id,
                 conversationId: conversation.id,
@@ -453,5 +473,74 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     private studentRoom(studentId: string) {
         return `student:${studentId}`;
+    }
+
+    private async isAdminOnline() {
+        console.log('Checking for any online admins...');
+        const sockets = await this.server.in(this.adminRoom()).fetchSockets();
+        const isOnline = sockets.length > 0;
+        console.log('Is there an online admin?', isOnline);
+        return isOnline;
+    }
+
+    private async generateAiResponse(payload) {
+        const context = await this.service.getMessages(payload.studentId, 10);
+        const message = payload.content;
+
+        const reply = await this.llm.generateReply({
+            message,
+            context: JSON.stringify(context),
+        });
+
+        console.log('AI Reply', reply);
+        return reply;
+    }
+
+    private async sendAiResponse(reply: string, user) {
+        // Persist the message
+        const conversation = await this.prisma.conversation.findFirst({
+            where: { participants: { some: { userId: user.id } } },
+        });
+
+        if (!conversation) throw new InternalServerErrorException();
+        const message = await this.prisma.message.create({
+            data: {
+                conversationId: conversation.id,
+                senderType: 'ai',
+                senderId: null,
+                senderName: 'AI',
+                content: reply,
+                // metadata: metadata ?? undefined,
+            },
+        });
+
+        const room = this.studentRoom(user.id);
+
+        // Emit the new message to the student's room so student and admins in that room receive it
+        this.server.to(room).emit('message', {
+            id: message.id,
+            conversationId: conversation.id,
+            senderType: message.senderType,
+            senderId: message.senderId,
+            content: message.content,
+            metadata: message.metadata,
+            createdAt: message.createdAt,
+        });
+
+        // Also emit to admins room so admin UIs can update centralized list
+        this.server.to(this.adminRoom()).emit('admin-sent', {
+            studentId: user.id,
+            id: message.id,
+            conversationId: conversation.id,
+            content: message.content,
+            metadata: message.metadata,
+            createdAt: message.createdAt,
+        });
+
+        // Acknowledge sender with saved message
+        this.server.emit('sent', {
+            id: message.id,
+            conversationId: conversation.id,
+        });
     }
 }
