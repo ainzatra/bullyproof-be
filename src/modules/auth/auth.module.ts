@@ -8,19 +8,28 @@ import { AuthGuard } from './guard/auth.guard';
 import { UsersModule } from 'src/modules/users/users.module';
 import { UsersService } from '../users/users.service';
 import { EmailService } from 'src/email.service';
+import { S3Service } from '../s3.service';
 
 @Module({
-  providers: [AuthService, PrismaService, AuthGuard, UsersService, EmailService, PrismaService],
-  imports: [
-    ZenstackModule,
-    JwtModule.register({
-      global: true,
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
-    }),
-    UsersModule
-  ],
-  controllers: [AuthController],
-  exports: [AuthGuard],
+    providers: [
+        AuthService,
+        PrismaService,
+        AuthGuard,
+        UsersService,
+        EmailService,
+        PrismaService,
+        S3Service,
+    ],
+    imports: [
+        ZenstackModule,
+        JwtModule.register({
+            global: true,
+            secret: process.env.JWT_SECRET,
+            signOptions: { expiresIn: '1d' },
+        }),
+        UsersModule,
+    ],
+    controllers: [AuthController],
+    exports: [AuthGuard],
 })
 export class AuthModule {}

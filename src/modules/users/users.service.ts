@@ -15,13 +15,17 @@ import { ClsService } from 'nestjs-cls';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserGuardianDto } from './dto/user-guardian.dto';
 import { UpdateGuidanceDto } from './dto/update-guidance.dto';
-import { UpdateGuidancePasswordDto } from './dto/update-guidance-password.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { randomUUID } from 'crypto';
+import { S3Service } from '../s3.service';
 
 @Injectable()
 export class UsersService {
     constructor(
         private readonly cls: ClsService,
         private readonly prisma: PrismaService,
+        private readonly s3: S3Service,
     ) {}
 
     async create(body: CreateUserDto): Promise<User> {
@@ -98,6 +102,9 @@ export class UsersService {
         const user = await this.prisma.user.findUnique({
             where: { id },
             include: { guardian: true },
+            omit: {
+                password: true,
+            },
         });
 
         if (!user) {
@@ -139,7 +146,7 @@ export class UsersService {
         });
     }
 
-    async updateGuidancePassword(id: string, data: UpdateGuidancePasswordDto) {
+    async updateGuidancePassword(id: string, data: UpdatePasswordDto) {
         const guidance = await this.prisma.guidance.findUnique({
             where: {
                 id,
@@ -172,5 +179,81 @@ export class UsersService {
                 email: true,
             },
         });
+    }
+
+    async updateUserInfo(id: string, data: UpdateUserDto) {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+
+        if (!user) throw new NotFoundException();
+
+        return this.prisma.user.update({
+            where: {
+                id,
+            },
+            data: {
+                name: data.name,
+                birthday: data.birthday,
+                gender: data.gender,
+                grade: data.grade,
+                section: data.section,
+                guardian: {
+                    update: {
+                        name: data.guardian.name,
+                        email: data.guardian.email,
+                        phone: data.guardian.phone,
+                        relationship: data.guardian.relationship,
+                        address: data.guardian.address,
+                    },
+                },
+            },
+        });
+    }
+
+    async updatePassword(id: string, data: UpdatePasswordDto) {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+
+        if (!user) throw new NotFoundException();
+
+        const isPasswordValid = await bcrypt.compare(data.old, user.password);
+
+        if (!isPasswordValid)
+            throw new UnauthorizedException('Incorrect password');
+
+        if (data.new !== data.confirm)
+            throw new BadRequestException('Password do not match');
+
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(data.new, saltRounds);
+
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                password: hashedPassword,
+            },
+        });
+
+        return 'Password updated successfully';
+    }
+
+    async updateUserAvatar(id: string, file: any) {
+        if (!file) throw new NotFoundException('File not found');
+
+        const user = await this.prisma.user.findUnique({ where: { id } });
+
+        if (!user) throw new NotFoundException();
+
+        const key = `avatars/${Date.now()}-${randomUUID()}-${(file.originalname || 'upload').replace(/\s+/g, '_')}`;
+        const url = await this.s3.upload(file, key);
+
+        if (!url) throw new BadRequestException('Image failed to upload to S3');
+
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                avatar: url,
+            },
+        });
+
+        return { message: 'Avatar updated successfully', url };
     }
 }
