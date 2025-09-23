@@ -71,4 +71,27 @@ export class AuthController {
             body.confirm,
         );
     }
+
+    // Guidance-specific reset endpoints (use guidance model)
+    @Post('guidance/send-reset-otp')
+    async sendGuidanceResetOtp(@Body() body: { email: string }) {
+        return this.service.sendGuidanceResetOtp(body.email);
+    }
+
+    @Post('guidance/verify-reset-otp')
+    async verifyGuidanceResetOtp(
+        @Body() body: { email: string; code: string },
+    ) {
+        return this.service.verifyGuidanceResetOtp(body.email, body.code);
+    }
+
+    @Post('guidance/reset-password')
+    async resetGuidancePassword(@Body() body: ResetPasswordDto) {
+        return this.service.resetGuidancePassword(
+            body.email,
+            body.code,
+            body.new,
+            body.confirm,
+        );
+    }
 }

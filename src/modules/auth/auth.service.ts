@@ -234,6 +234,64 @@ export class AuthService {
         return { message: 'Password updated successfully' };
     }
 
+    // Guidance-specific reset endpoints (use guidance model)
+    async sendGuidanceResetOtp(email: string) {
+        const guidance = await this.prisma.guidance.findUnique({
+            where: { email },
+        });
+        if (!guidance) throw new NotFoundException('Guidance not found');
+        const code = await this.email.sendVerification(email);
+        await this.prisma.guidance.update({
+            where: { email },
+            data: { otp: code },
+        });
+        return { message: 'Reset OTP sent' };
+    }
+
+    async verifyGuidanceResetOtp(email: string, code: string) {
+        const guidance = await this.prisma.guidance.findUnique({
+            where: { email },
+        });
+        if (!guidance) throw new NotFoundException('Guidance not found');
+
+        if (guidance.otp !== code)
+            throw new BadRequestException('Invalid code');
+
+        // Keep the OTP so it can still be used by the reset-password endpoint
+        return { message: 'OTP verified' };
+    }
+
+    async resetGuidancePassword(
+        email: string,
+        code: string,
+        newPassword: string,
+        confirm: string,
+    ) {
+        const guidance = await this.prisma.guidance.findUnique({
+            where: { email },
+        });
+        if (!guidance) throw new NotFoundException('Guidance not found');
+
+        if (guidance.otp !== code)
+            throw new BadRequestException('Invalid code');
+
+        if (newPassword !== confirm)
+            throw new BadRequestException('Password do not match');
+
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        await this.prisma.guidance.update({
+            where: { email },
+            data: {
+                password: hashedPassword,
+                otp: null,
+            },
+        });
+
+        return { message: 'Password updated successfully' };
+    }
+
     private generateCode(): string {
         // Generate a 6-digit numeric code (100000 - 999999)
         return Math.floor(100000 + Math.random() * 900000).toString();
