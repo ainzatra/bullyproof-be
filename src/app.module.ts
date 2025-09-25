@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { ClsModule, ClsService } from 'nestjs-cls';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthInterceptor } from './modules/auth/auth.interceptor';
-import { PrismaService } from './prisma.service';
+import { PrismaService } from './modules/prisma/prisma.service';
 import { UsersModule } from './modules/users/users.module';
 import { ZenstackModule } from './zenstack.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ReportModule } from './modules/report/report.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { PrismaModule } from './modules/prisma/prisma.module';
 
 @Module({
     imports: [
@@ -37,6 +38,7 @@ import { ChatModule } from './modules/chat/chat.module';
         AuthModule,
         ReportModule,
         ChatModule,
+        PrismaModule,
     ],
     controllers: [],
     providers: [

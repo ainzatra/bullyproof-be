@@ -14,7 +14,7 @@ import { ClsService } from 'nestjs-cls';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { EmailService } from 'src/email.service';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from 'src/modules/prisma/prisma.service';
 
 type TokenPayload = {
     token: string;

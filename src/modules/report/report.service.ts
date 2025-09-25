@@ -3,7 +3,7 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { randomUUID } from 'crypto';
 import { S3Service } from '../s3.service';

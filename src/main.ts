@@ -36,7 +36,7 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, documentFactory);
 
     await app.listen(port);
-    process.stdout.write('\x1Bc'); // Clear console
+    // process.stdout.write('\x1Bc'); // Clear console
     console.log(`Server is running on: http://${ip}:${port}`);
 }
 bootstrap();

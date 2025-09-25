@@ -14,7 +14,7 @@ import {
     Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ChatService } from './chat.service';
 import { LlmService } from '../llm/llm.service';
 
