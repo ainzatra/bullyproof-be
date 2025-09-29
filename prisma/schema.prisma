@@ -41,6 +41,7 @@ model User {
   avatar                  String?
   reports                 Report[]
   guardian                Guardian?
+  blocked                 BlockedUser?
   conversationParticipant ConversationParticipant?
 }
 
@@ -159,4 +160,5 @@ model BlockedUser {
   userId    String   @unique()
   reason    String?
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }

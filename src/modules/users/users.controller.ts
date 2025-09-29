@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     Param,
     Post,
@@ -70,6 +71,16 @@ export class UsersController {
     ) {
         console.log('Updating Guidance ID:', { id, body });
         return this.service.updateGuidancePassword(id, body);
+    }
+
+    @Post('/block/:id')
+    blockUser(@Param('id') id: string) {
+        return this.service.blockUser(id);
+    }
+
+    @Delete('/unblock/:id')
+    unblockUser(@Param('id') id: string) {
+        return this.service.unblockUser(id);
     }
 
     @Get(':id')

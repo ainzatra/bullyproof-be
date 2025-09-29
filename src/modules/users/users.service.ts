@@ -84,6 +84,7 @@ export class UsersService {
             orderBy: { name: 'asc' },
             include: {
                 guardian: true,
+                blocked: true,
             },
             omit: {
                 password: true,
@@ -104,7 +105,7 @@ export class UsersService {
     async findOne(id: string): Promise<UserGuardianDto> {
         const user = await this.prisma.user.findUnique({
             where: { id },
-            include: { guardian: true },
+            include: { guardian: true, blocked: true },
             omit: {
                 password: true,
                 otp: true,
@@ -262,5 +263,45 @@ export class UsersService {
         });
 
         return { message: 'Avatar updated successfully', url };
+    }
+
+    async blockUser(id: string) {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+
+        if (!user) throw new NotFoundException('User not found');
+
+        const blocked = await this.prisma.blockedUser.findUnique({
+            where: { userId: id },
+        });
+
+        if (blocked) {
+            throw new BadRequestException('User is already blocked');
+        }
+        await this.prisma.blockedUser.create({
+            data: {
+                userId: id,
+            },
+        });
+
+        return { message: 'User has been blocked', id };
+    }
+
+    async unblockUser(id: string) {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+
+        if (!user) throw new NotFoundException('User not found');
+
+        const blocked = await this.prisma.blockedUser.findUnique({
+            where: { userId: id },
+        });
+
+        if (!blocked) {
+            throw new BadRequestException('User is not blocked');
+        }
+        await this.prisma.blockedUser.delete({
+            where: { userId: id },
+        });
+
+        return { message: 'User has been unblocked', id };
     }
 }
