@@ -5,6 +5,11 @@ import { ChatService } from './chat.service';
 export class ChatController {
     constructor(private readonly service: ChatService) {}
 
+    @Get('conversations')
+    fetchAllConversations() {
+        return this.service.getAllConversations();
+    }
+
     @Get(':id/messages')
     fetchMessages(@Param('id') id: string) {
         return this.service.getMessages(id);

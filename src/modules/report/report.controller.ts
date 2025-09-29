@@ -21,7 +21,7 @@ import { CreateReportDto } from './dto/create-report.dto';
 import { memoryStorage } from 'multer';
 import { ReportDocumentDto } from './dto/report-document.dto';
 
-// @UseGuards(AuthGuard)
+@UseGuards(AuthGuard)
 @Controller('reports')
 export class ReportController {
     constructor(private readonly service: ReportService) {}

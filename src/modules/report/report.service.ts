@@ -39,6 +39,9 @@ export class ReportService {
                     },
                 },
             },
+            orderBy: {
+                createdAt: 'desc',
+            },
         });
     }
 
@@ -58,6 +61,17 @@ export class ReportService {
         const reports = await this.prisma.report.findMany({
             where: {
                 studentId: userId,
+            },
+            include: {
+                student: {
+                    select: {
+                        name: true,
+                        email: true,
+                        grade: true,
+                        section: true,
+                    },
+                },
+                ai_flag: true,
             },
             orderBy: {
                 createdAt: 'desc',
