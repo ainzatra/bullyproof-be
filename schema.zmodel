@@ -74,13 +74,14 @@ model Report {
     id          String   @id @default(cuid())
     studentId   String
     details String
-    actionsTaken String?
+    actionsTaken String? // separated by comma
     feelings String // lets just separate each by comma
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
     status ReportStatus @default(Pending)// pending, in progress, resolved
     notes String? // notes ni guidance
     guidanceId String?
+    knowsBully Boolean @default(false)
 
     evidences   ReportEvidence[]
     guidance   Guidance? @relation(fields: [guidanceId], references: [id])

@@ -80,6 +80,7 @@ model Report {
   status       ReportStatus     @default(Pending)
   notes        String?
   guidanceId   String?
+  knowsBully   Boolean          @default(false)
   evidences    ReportEvidence[]
   guidance     Guidance?        @relation(fields: [guidanceId], references: [id])
   student      User             @relation(fields: [studentId], references: [id])

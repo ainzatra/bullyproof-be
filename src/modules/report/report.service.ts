@@ -131,6 +131,8 @@ export class ReportService {
                 feelings: data.feelings,
                 details: data.details,
                 status: 'Pending',
+                knowsBully:
+                    data.knowsBully.toLowerCase() === 'true' ? true : false,
             },
         });
 
