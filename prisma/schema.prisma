@@ -153,3 +153,10 @@ model Message {
   createdAt      DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id])
 }
+
+model BlockedUser {
+  id        String   @id() @default(uuid())
+  userId    String   @unique()
+  reason    String?
+  createdAt DateTime @default(now())
+}

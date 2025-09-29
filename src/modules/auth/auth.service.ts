@@ -17,7 +17,6 @@ import { EmailService } from 'src/email.service';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 
 type TokenPayload = {
-    token: string;
     id: string;
     name: string;
     email: string;
@@ -52,6 +51,11 @@ export class AuthService {
             throw new UnauthorizedException('Not verified yet');
         }
 
+        // Check if user is blocked
+        const blockedUser = await this.prisma.blockedUser.findUnique({
+            where: { userId: user.id },
+        });
+
         const token = await this.generateJWT(user);
         const userInfo = await this.service.findOne(user.id);
         console.log('Login successful: ', user.email);
@@ -62,6 +66,7 @@ export class AuthService {
             email: user.email,
             isVerified: user.isVerified,
             avatar: user.avatar,
+            blocked: !!blockedUser,
         };
     }
 
@@ -130,7 +135,11 @@ export class AuthService {
         };
     }
 
-    async generateJWT(user: User | Guidance): Promise<string> {
+    async generateJWT(user: {
+        id: string;
+        email: string;
+        name: string;
+    }): Promise<string> {
         const tokenPayload = {
             id: user.id,
             email: user.email,
@@ -142,13 +151,19 @@ export class AuthService {
         return token;
     }
 
-    async verifyJwtToken(token: string): Promise<TokenPayload> {
-        const result = await this.jwtService.decode(token);
+    async verifyJwtToken(token: string): Promise<TokenPayload | null> {
+        const result = (await this.jwtService.decode(
+            token,
+        )) as TokenPayload | null;
         return result;
     }
 
-    async refresh(): Promise<TokenPayload> {
+    async refresh(): Promise<TokenPayload & { token: string }> {
         const auth = this.cls.get('auth');
+        if (!auth || !auth.token) {
+            throw new UnauthorizedException('Invalid Token');
+        }
+
         const result = await this.verifyJwtToken(auth.token);
 
         if (!result) {
@@ -170,7 +185,7 @@ export class AuthService {
             id: user.id,
             name: user.name,
             email: user.email,
-            token: result.token,
+            token: auth.token,
         };
     }
 
