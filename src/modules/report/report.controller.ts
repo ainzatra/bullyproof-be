@@ -61,10 +61,16 @@ export class ReportController {
         @Body()
         body: {
             notes: string;
+            actionsTaken: string;
         },
     ) {
         console.log('updare report', files);
-        return this.service.updateReport(id, body.notes, files);
+        return this.service.updateReport(
+            id,
+            body.notes,
+            body.actionsTaken,
+            files,
+        );
     }
 
     @Put('update-status/:id')

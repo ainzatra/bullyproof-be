@@ -234,7 +234,7 @@ export class ReportService {
         });
     }
 
-    async updateReport(id, notes, files: ReportDocumentDto) {
+    async updateReport(id, notes, actionsTaken, files: ReportDocumentDto) {
         const report = await this.prisma.report.findUnique({
             where: { id },
         });
@@ -242,11 +242,12 @@ export class ReportService {
         if (!report) throw new NotFoundException();
 
         // Update report notes
-        if (notes) {
+        if (notes || actionsTaken) {
             await this.prisma.report.update({
                 where: { id },
                 data: {
                     notes,
+                    actionsTaken,
                 },
             });
         }
