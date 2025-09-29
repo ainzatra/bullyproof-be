@@ -28,7 +28,7 @@ export class UsersService {
         private readonly s3: S3Service,
     ) {}
 
-    async create(body: CreateUserDto): Promise<User> {
+    async create(body: CreateUserDto) {
         if (
             body.password &&
             body.confirm_password &&
@@ -63,7 +63,10 @@ export class UsersService {
         };
 
         try {
-            return await this.prisma.user.create({ data });
+            return await this.prisma.user.create({
+                data,
+                omit: { password: true, otp: true },
+            });
         } catch (error: any) {
             // Handle unique constraint violation (duplicate email)
             if (error?.code === 'P2002') {
@@ -104,6 +107,7 @@ export class UsersService {
             include: { guardian: true },
             omit: {
                 password: true,
+                otp: true,
             },
         });
 
@@ -119,6 +123,7 @@ export class UsersService {
             data: {
                 otp: code,
             },
+            omit: { password: true, otp: true },
         });
     }
 
@@ -128,6 +133,7 @@ export class UsersService {
             data: {
                 isVerified: true,
             },
+            omit: { password: true, otp: true },
         });
     }
 
@@ -206,6 +212,7 @@ export class UsersService {
                     },
                 },
             },
+            omit: { password: true, otp: true },
         });
     }
 
