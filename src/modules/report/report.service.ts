@@ -12,6 +12,7 @@ import { AiReport, ReportStatus } from '@prisma/client';
 import { LlmService } from '../llm/llm.service';
 import { AireportService } from '../aireport/aireport.service';
 import { ReportDocumentDto } from './dto/report-document.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ReportService {
@@ -20,6 +21,7 @@ export class ReportService {
         private readonly s3: S3Service,
         private readonly llm: LlmService,
         private readonly ai: AireportService,
+        private readonly notificationService: NotificationService,
     ) {}
 
     async findForReview() {
@@ -36,6 +38,7 @@ export class ReportService {
                         email: true,
                         grade: true,
                         section: true,
+                        avatar: true,
                     },
                 },
             },
@@ -94,6 +97,7 @@ export class ReportService {
                         email: true,
                         grade: true,
                         section: true,
+                        avatar: true,
                         guardian: true,
                     },
                 },
@@ -114,12 +118,97 @@ export class ReportService {
 
         if (report.status === 'InProgress') newStatus = 'Resolved';
 
-        return this.prisma.report.update({
+        const updatedReport = await this.prisma.report.update({
             where: { id },
             data: {
                 status: newStatus,
             },
         });
+
+        // Send push notification to the student
+        try {
+            console.log('Send status update push notif');
+            await this.notificationService.sendReportStatusUpdate(
+                id,
+                report.studentId,
+                newStatus,
+            );
+            console.log('Sentstatus update push notif');
+        } catch (error) {
+            console.error('Failed to send push notification:', error);
+            // Don't throw error here as report update should still succeed
+        }
+
+        // Send notification to guardian
+        try {
+            console.log('Send status update to guardian');
+            const studentWithGuardian = await this.prisma.user.findUnique({
+                where: { id: report.studentId },
+                include: { guardian: true },
+            });
+
+            if (studentWithGuardian?.guardian) {
+                await this.notificationService.sendReportStatusUpdateToGuardian(
+                    id,
+                    studentWithGuardian.guardian.id,
+                    newStatus,
+                );
+                console.log('Sent status update to guardian');
+            }
+        } catch (error) {
+            console.error('Failed to send guardian notification:', error);
+            // Don't throw error here as report update should still succeed
+        }
+
+        return updatedReport;
+    }
+
+    async updateReportStatusWithId(reportId: string, status: ReportStatus) {
+        const report = await this.prisma.report.findUnique({
+            where: { id: reportId },
+        });
+
+        if (!report) throw new NotFoundException();
+
+        const updatedReport = await this.prisma.report.update({
+            where: { id: reportId },
+            data: { status },
+        });
+
+        // Send push notification to the student
+        try {
+            await this.notificationService.sendReportStatusUpdate(
+                reportId,
+                report.studentId,
+                status,
+            );
+        } catch (error) {
+            console.error('Failed to send push notification:', error);
+            // Don't throw error here as report update should still succeed
+        }
+
+        // Send notification to guardian
+        try {
+            console.log('Send status update to guardian');
+            const studentWithGuardian = await this.prisma.user.findUnique({
+                where: { id: report.studentId },
+                include: { guardian: true },
+            });
+
+            if (studentWithGuardian?.guardian) {
+                await this.notificationService.sendReportStatusUpdateToGuardian(
+                    reportId,
+                    studentWithGuardian.guardian.id,
+                    status,
+                );
+                console.log('Sent status update to guardian');
+            }
+        } catch (error) {
+            console.error('Failed to send guardian notification:', error);
+            // Don't throw error here as report update should still succeed
+        }
+
+        return updatedReport;
     }
 
     async createReport(data: CreateReportDto, files: any) {
@@ -227,6 +316,30 @@ export class ReportService {
 
         // Save AI Report
         await this.ai.createReport(report.id, aiReport);
+
+        // Send notification to guardian when report is created
+        try {
+            console.log('Send new report notification to guardian');
+            const studentWithGuardian = await this.prisma.user.findUnique({
+                where: { id: data.studentId },
+                include: { guardian: true },
+            });
+
+            if (studentWithGuardian?.guardian) {
+                await this.notificationService.sendReportStatusUpdateToGuardian(
+                    report.id,
+                    studentWithGuardian.guardian.id,
+                    'Pending',
+                );
+                console.log('Sent new report notification to guardian');
+            }
+        } catch (error) {
+            console.error(
+                'Failed to send guardian notification for new report:',
+                error,
+            );
+            // Don't throw error here as report creation should still succeed
+        }
 
         // Return the report including evidences
         return this.prisma.report.findUnique({

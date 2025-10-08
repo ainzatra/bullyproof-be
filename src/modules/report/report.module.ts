@@ -5,9 +5,10 @@ import { S3Service } from '../s3.service';
 import { LlmService } from '../llm/llm.service';
 import { AireportService } from '../aireport/aireport.service';
 import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-    imports: [PrismaModule],
+    imports: [PrismaModule, NotificationModule],
     providers: [ReportService, S3Service, LlmService, AireportService],
     controllers: [ReportController],
 })

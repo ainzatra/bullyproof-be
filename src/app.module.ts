@@ -10,6 +10,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { ReportModule } from './modules/report/report.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
     imports: [
@@ -39,6 +40,7 @@ import { PrismaModule } from './modules/prisma/prisma.module';
         ReportModule,
         ChatModule,
         PrismaModule,
+        NotificationModule,
     ],
     controllers: [],
     providers: [
