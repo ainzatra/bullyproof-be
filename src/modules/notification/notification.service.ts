@@ -56,12 +56,10 @@ export class NotificationService {
     }
 
     async unregisterToken(token: string) {
-        await this.prisma.pushToken.update({
+        console.log('Unregister token:', token);
+        await this.prisma.pushToken.delete({
             where: {
                 token,
-            },
-            data: {
-                is_active: false,
             },
         });
     }
