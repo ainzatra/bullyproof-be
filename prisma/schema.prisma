@@ -109,6 +109,7 @@ model AiReport {
   bullying_category String
   sentiment         String
   urgency           String
+  prescription      String?
   report            Report   @relation(fields: [report_id], references: [id])
 }
 

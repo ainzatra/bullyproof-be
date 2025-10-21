@@ -328,17 +328,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 id: message.id,
                 conversationId: conversation.id,
             });
-            const isOnline = await this.isAdminOnline();
-            console.log('Check is admin online', isOnline);
-            if (!isOnline) {
-                console.log('Generating AI Response...');
-                const reply = await this.generateAiResponse(payload);
+            console.log('Generating AI Response...');
+            const reply = await this.generateAiResponse(payload);
 
-                if (reply) {
-                    console.log('Sending the AI Response...');
-                    await this.sendAiResponse(reply, user);
-                    console.log('AI Response has been sent...');
-                }
+            if (reply) {
+                console.log('Sending the AI Response...');
+                await this.sendAiResponse(reply, user);
+                console.log('AI Response has been sent...');
             }
         } catch (err) {
             this.logger.error('Error saving message', err as any);

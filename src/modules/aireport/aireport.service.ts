@@ -17,6 +17,7 @@ export class AireportService {
                 threat: data.threat,
                 toxicity: data.toxicityScore,
                 urgency: data.urgencyLevel,
+                prescription: data.prescription,
             },
         });
     }

@@ -80,7 +80,6 @@ export class ReportService {
                 createdAt: 'desc',
             },
         });
-
         return reports;
     }
 
@@ -427,7 +426,7 @@ export class ReportService {
         const total = await this.prisma.report.count();
 
         const status = await this.prisma.report.groupBy({
-            by: ['status'],
+            by: ['knowsBully'],
             _count: true,
         });
 

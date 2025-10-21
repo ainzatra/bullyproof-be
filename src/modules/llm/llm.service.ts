@@ -40,7 +40,8 @@ with this structure:
   "bullyingCategory": string[],
   "sentiment": string,
   "urgencyLevel": string,
-  "summary": string
+  "summary": string,
+  "prescription": string,
 }
 
 Formatting rules:
@@ -49,6 +50,47 @@ Formatting rules:
 - "urgencyLevel": Only use "Low", "Medium", or "High".
 - "bullyingCategory": Convert to capitalized words with spaces instead of underscores (e.g., "Verbal Abuse", "Cyberbullying").
 - "summary": Keep as a descriptive sentence or paragraph.
+- "prescription": Provide recommended actions and options for the student based on urgency level
+
+PRESCRIPTION GENERATION GUIDELINES:
+Write the prescription as recommendations and options for the student. Use a professional but accessible tone without implying the AI can take direct action.
+
+LOW SEVERITY (urgencyLevel: "Low"):
+Focus on self-help and available support options:
+- "Consider visiting the Guidance Office for counseling and support. They can help you develop strategies to handle this situation and build emotional resilience."
+- "You may want to talk to your parents or guardians about what happened. Their support can be valuable, and mediation options are available if appropriate."
+- "For online incidents, review your privacy settings and consider blocking harmful accounts. Digital safety resources are available through the school."
+- "Building assertiveness skills can help. The Guidance Office offers resources and counseling to help you respond effectively to difficult situations."
+
+MEDIUM SEVERITY (urgencyLevel: "Medium"):
+Require structured intervention and monitoring:
+- "It's recommended to visit the Guidance Office for immediate support. Parental/guardian involvement may be necessary to ensure your safety and well-being."
+- "This situation should be reported to School Administration for proper documentation and action. They can implement appropriate measures to address the behavior."
+- "Consider scheduling an appointment with the school psychologist for professional counseling. They can provide coping strategies during this challenging time."
+- "Regular monitoring of this situation is advised. Keep a record of incidents and report any new occurrences to the Guidance Office."
+
+HIGH SEVERITY (urgencyLevel: "High"):
+Require immediate intervention and possible legal action:
+- "This situation requires immediate attention from law enforcement. Consider contacting the nearest Police Station to report the incident and ensure your safety."
+- "For cyber-related threats, report the case to the Cybercrime Unit. Preserve all digital evidence including messages, screenshots, and account information."
+- "Legal assistance may be necessary to protect your rights. Consider consulting with legal services about options such as protective orders or other legal remedies."
+- "Coordinate with both the Guidance Office and School Administration to implement comprehensive protection measures. A safety plan should be developed immediately."
+
+CRITICAL REQUIREMENTS:
+- Write as recommendations and options for the student (use "consider," "recommended," "may want to")
+- Maintain a professional but accessible tone
+- Do not imply the AI can take direct action or make arrangements
+- Provide specific, actionable recommendations
+- Avoid copying base options word-for-word - create original, natural language
+- Include context-specific details based on the report content
+- Keep prescriptions concise (2-4 sentences maximum)
+
+IMPORTANT: Always consider the specific context of the report when generating prescriptions. Include relevant details about:
+- Type of bullying (verbal, physical, cyber, social)
+- Specific platforms or locations involved
+- Duration and frequency of incidents
+- Impact on the student's well-being and academic performance
+- Any safety concerns or immediate risks
 
 Report details:
 - Student feelings: ${feelings}

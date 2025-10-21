@@ -25,7 +25,7 @@ import { BlockedUserMiddleware } from './blocked-user.middleware';
         JwtModule.register({
             global: true,
             secret: process.env.JWT_SECRET,
-            signOptions: { expiresIn: '1d' },
+            signOptions: { expiresIn: '30d' },
         }),
         UsersModule,
         PrismaModule,
